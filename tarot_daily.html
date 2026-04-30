@@ -889,6 +889,100 @@ function saveTodaysReading(data) {
   } catch(e) {}
 }
 
+function splitCsvLine(line) {
+  var out = [];
+  var current = '';
+  var inQuotes = false;
+  for (var i = 0; i < line.length; i++) {
+    var ch = line.charAt(i);
+    if (ch === '"') {
+      if (inQuotes && line.charAt(i + 1) === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (ch === ',' && !inQuotes) {
+      out.push(current);
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  out.push(current);
+  return out;
+}
+
+function normalizeCardId(raw) {
+  return String(raw || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[\s_]+/g, '-')
+    .replace(/[^a-z0-9-]/g, '');
+}
+
+function parseReadingsCsv(csvText) {
+  var lines = String(csvText || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  var nonEmpty = lines.filter(function(line) { return line.trim() !== ''; });
+  if (!nonEmpty.length) return { count: 0, readings: {} };
+
+  var headerCols = splitCsvLine(nonEmpty[0]).map(function(col) { return col.trim().toLowerCase(); });
+  var idxCombo = headerCols.indexOf('combo');
+  var idxCard1 = headerCols.indexOf('card1');
+  var idxCard2 = headerCols.indexOf('card2');
+  var idxCard3 = headerCols.indexOf('card3');
+  var idxTitle = headerCols.indexOf('title');
+  var idxText = headerCols.indexOf('text');
+
+  if (idxText === -1 || (idxCombo === -1 && (idxCard1 === -1 || idxCard2 === -1 || idxCard3 === -1))) {
+    throw new Error('CSV needs columns: text + (combo OR card1,card2,card3). Optional: title');
+  }
+
+  var parsed = {};
+  for (var i = 1; i < nonEmpty.length; i++) {
+    var row = splitCsvLine(nonEmpty[i]);
+    var combo = '';
+    if (idxCombo !== -1) {
+      combo = row[idxCombo] || '';
+    } else {
+      combo = [row[idxCard1], row[idxCard2], row[idxCard3]].map(normalizeCardId).join('|');
+    }
+    combo = combo.split('|').map(normalizeCardId).join('|');
+    var text = (row[idxText] || '').trim();
+    if (!combo || combo.split('|').length !== 3 || !text) continue;
+    parsed[combo] = {
+      title: idxTitle === -1 ? null : ((row[idxTitle] || '').trim() || null),
+      text: text
+    };
+  }
+
+  return { count: Object.keys(parsed).length, readings: parsed };
+}
+
+function applyReadingsFromCsvText(csvText) {
+  var result = parseReadingsCsv(csvText);
+  Object.keys(result.readings).forEach(function(key) {
+    READINGS[key] = result.readings[key];
+  });
+}
+
+function loadReadingsFromRepoCsv(done) {
+  fetch('./tarot_readings.csv', { cache: 'no-store' })
+    .then(function(resp) {
+      if (!resp.ok) throw new Error('Unable to load tarot_readings.csv');
+      return resp.text();
+    })
+    .then(function(csvText) {
+      applyReadingsFromCsvText(csvText);
+    })
+    .catch(function() {
+      // If CSV isn't present or is invalid, we continue with built-in readings.
+    })
+    .finally(function() {
+      if (typeof done === 'function') done();
+    });
+}
+
 // ─── CARD RENDERING ───────────────────────────────────────────────────────────
 function renderCard(index, card) {
   var labelLines = card.label.split('\n');
@@ -910,47 +1004,49 @@ function getCardById(cardId) {
   return null;
 }
 
-// Check localStorage first
-var stored = loadTodaysReading();
+function initDailyReading() {
+  // Check localStorage first
+  var stored = loadTodaysReading();
 
-if (stored) {
-  // Re-hydrate the same reading
-  drawnCards = stored.cardIds.map(function(id) {
-    return getCardById(id);
-  }).filter(Boolean);
-  if (drawnCards.length === 3) {
-    readingData = stored;
+  if (stored) {
+    // Re-hydrate the same reading
+    drawnCards = stored.cardIds.map(function(id) {
+      return getCardById(id);
+    }).filter(Boolean);
+    if (drawnCards.length === 3) {
+      readingData = stored;
+    }
   }
+
+  if (!readingData || drawnCards.length !== 3) {
+    // Draw fresh random cards for today (per user/browser)
+    drawnCards = drawCards();
+
+    // Look up pre-written reading, or generate fallback
+    var comboKey = drawnCards.map(function(c) { return c.id; }).join('|');
+    var preWritten = READINGS[comboKey];
+
+    readingData = {
+      cardIds: drawnCards.map(function(c) { return c.id; }),
+      comboKey: comboKey,
+      title: preWritten ? preWritten.title : null,
+      text: preWritten ? preWritten.text : generateFallbackReading(drawnCards)
+    };
+
+    saveTodaysReading(readingData);
+  }
+
+  // Render cards
+  drawnCards.forEach(function(card, i) {
+    renderCard(i, card);
+  });
+
+  // Populate reading text
+  var readingTextEl = document.getElementById('reading-text');
+  var p = document.createElement('p');
+  p.textContent = readingData.text;
+  readingTextEl.appendChild(p);
 }
-
-if (!readingData || drawnCards.length !== 3) {
-  // Draw fresh random cards for today (per user/browser)
-  drawnCards = drawCards();
-
-  // Look up pre-written reading, or generate fallback
-  var comboKey = drawnCards.map(function(c) { return c.id; }).join('|');
-  var preWritten = READINGS[comboKey];
-
-  readingData = {
-    cardIds: drawnCards.map(function(c) { return c.id; }),
-    comboKey: comboKey,
-    title: preWritten ? preWritten.title : null,
-    text: preWritten ? preWritten.text : generateFallbackReading(drawnCards)
-  };
-
-  saveTodaysReading(readingData);
-}
-
-// Render cards
-drawnCards.forEach(function(card, i) {
-  renderCard(i, card);
-});
-
-// Populate reading text
-var readingTextEl = document.getElementById('reading-text');
-var p = document.createElement('p');
-p.textContent = readingData.text;
-readingTextEl.appendChild(p);
 
 // ─── FLIP INTERACTION ─────────────────────────────────────────────────────────
 function flipCard(id, delay) {
@@ -990,7 +1086,10 @@ function wireRevealHandlers() {
     wraps[j].addEventListener('touchstart', revealAll, false);
   }
 }
-wireRevealHandlers();
+loadReadingsFromRepoCsv(function() {
+  initDailyReading();
+  wireRevealHandlers();
+});
 
 // ─── DATE DISPLAY ─────────────────────────────────────────────────────────────
 document.getElementById('top-date').textContent =
