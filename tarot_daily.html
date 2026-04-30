@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tarot Every Day</title>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --parchment: #f2ecda;
+  --ink: #1c2e20;
+  --ink-light: #3a5040;
+  --gold: #b8943c;
+  --cream: #faf6ec;
+  --muted: #7a8a78;
+}
+html, body {
+  background: var(--parchment);
+  color: var(--ink);
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  min-height: 100vh;
+}
+.page {
+  max-width: 480px;
+  margin: 0 auto;
+  background: var(--parchment);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.top-bar {
+  width: 100%;
+  text-align: center;
+  padding: 22px 24px 14px;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink);
+  border-bottom: 1px solid rgba(28,46,32,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+.top-bar .date { font-weight: 500; }
+.top-bar .sep { opacity: 0.3; }
+.header-section {
+  width: 100%;
+  text-align: center;
+  padding: 28px 28px 0;
+  min-height: 110px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.spread-title {
+  font-family: 'IM Fell English', Georgia, serif;
+  font-size: 32px;
+  font-weight: 400;
+  color: #1a5c38;
+  line-height: 1.15;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.7s ease 0.1s, transform 0.7s ease 0.1s;
+}
+.spread-title.visible { opacity: 1; transform: translateY(0); }
+.spread {
+  width: 100%;
+  padding: 28px 16px 8px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+.card-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+.card-position-label {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: center;
+  min-height: 22px;
+  line-height: 1.3;
+}
+.card-wrap {
+  width: 100%;
+  aspect-ratio: 3/5;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+.card-scene {
+  width: 100%;
+  height: 100%;
+  perspective: 900px;
+}
+.card-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.card-inner.flipped {
+  transform: rotateY(180deg);
+}
+.card-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.card-back {
+  background: #1c2e20;
+  border: 2px solid var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotateY(0deg);
+}
+.card-back-inner {
+  width: calc(100% - 12px);
+  height: calc(100% - 12px);
+  border: 1px solid rgba(184,148,60,0.4);
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.card-front {
+  background: var(--cream);
+  border: 2px solid var(--gold);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 6px;
+  transform: rotateY(180deg);
+}
+.card-label {
+  font-size: 7px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #8a7050;
+  text-align: center;
+  font-family: 'Cormorant Garamond', serif;
+  line-height: 1.3;
+}
+.card-art {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.card-numeral {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: #8a7050;
+  font-family: 'IM Fell English', serif;
+}
+.tap-hint {
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+  padding: 14px 24px 4px;
+  font-style: italic;
+  transition: opacity 0.4s;
+}
+.reading {
+  width: 100%;
+  padding: 24px 28px 36px;
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.7s ease 0.3s, transform 0.7s ease 0.3s;
+}
+.reading.visible { opacity: 1; transform: translateY(0); }
+.reading-rule {
+  height: 1px;
+  background: rgba(28,46,32,0.15);
+  margin-bottom: 24px;
+}
+.reading-text p {
+  font-size: 17px;
+  line-height: 1.78;
+  color: var(--ink);
+  text-align: center;
+  font-weight: 300;
+  margin-bottom: 1.2em;
+}
+.reading-text p:last-child { margin-bottom: 0; }
+.footer {
+  width: 100%;
+  text-align: center;
+  padding: 20px 24px 28px;
+  border-top: 1px solid rgba(28,46,32,0.15);
+  margin-top: auto;
+}
+.footer a {
+  font-size: 14px;
+  color: var(--ink-light);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  letter-spacing: 0.02em;
+}
+
+/* Reversed card styling */
+.card-inner.reversed .card-front {
+  transform: rotateY(180deg) rotate(180deg);
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="top-bar">
+    <span class="date" id="top-date"></span>
+    <span class="sep">·</span>
+    <span>new every day</span>
+  </div>
+
+  <div class="spread">
+    <div class="card-slot">
+      <div class="card-position-label">Embrace</div>
+      <div class="card-wrap">
+        <div class="card-scene">
+          <div class="card-inner" id="card-0">
+            <div class="card-face card-back">
+              <div class="card-back-inner">
+                <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+                  <circle cx="18" cy="18" r="13" stroke="#c8a84a" stroke-width="0.9" fill="none"/>
+                  <circle cx="18" cy="18" r="8" stroke="#c8a84a" stroke-width="0.6" fill="none"/>
+                  <line x1="18" y1="5" x2="18" y2="31" stroke="#c8a84a" stroke-width="0.6"/>
+                  <line x1="5" y1="18" x2="31" y2="18" stroke="#c8a84a" stroke-width="0.6"/>
+                  <circle cx="18" cy="18" r="2" fill="#c8a84a"/>
+                </svg>
+              </div>
+            </div>
+            <div class="card-face card-front" id="card-front-0">
+              <div class="card-label" id="card-label-0"></div>
+              <div class="card-art" id="card-art-0"></div>
+              <div class="card-numeral" id="card-numeral-0"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-slot">
+      <div class="card-position-label">Release</div>
+      <div class="card-wrap">
+        <div class="card-scene">
+          <div class="card-inner" id="card-1">
+            <div class="card-face card-back">
+              <div class="card-back-inner">
+                <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+                  <circle cx="18" cy="18" r="13" stroke="#c8a84a" stroke-width="0.9" fill="none"/>
+                  <circle cx="18" cy="18" r="8" stroke="#c8a84a" stroke-width="0.6" fill="none"/>
+                  <line x1="18" y1="5" x2="18" y2="31" stroke="#c8a84a" stroke-width="0.6"/>
+                  <line x1="5" y1="18" x2="31" y2="18" stroke="#c8a84a" stroke-width="0.6"/>
+                  <circle cx="18" cy="18" r="2" fill="#c8a84a"/>
+                </svg>
+              </div>
+            </div>
+            <div class="card-face card-front" id="card-front-1">
+              <div class="card-label" id="card-label-1"></div>
+              <div class="card-art" id="card-art-1"></div>
+              <div class="card-numeral" id="card-numeral-1"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-slot">
+      <div class="card-position-label">Message</div>
+      <div class="card-wrap">
+        <div class="card-scene">
+          <div class="card-inner" id="card-2">
+            <div class="card-face card-back">
+              <div class="card-back-inner">
+                <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+                  <circle cx="18" cy="18" r="13" stroke="#c8a84a" stroke-width="0.9" fill="none"/>
+                  <circle cx="18" cy="18" r="8" stroke="#c8a84a" stroke-width="0.6" fill="none"/>
+                  <line x1="18" y1="5" x2="18" y2="31" stroke="#c8a84a" stroke-width="0.6"/>
+                  <line x1="5" y1="18" x2="31" y2="18" stroke="#c8a84a" stroke-width="0.6"/>
+                  <circle cx="18" cy="18" r="2" fill="#c8a84a"/>
+                </svg>
+              </div>
+            </div>
+            <div class="card-face card-front" id="card-front-2">
+              <div class="card-label" id="card-label-2"></div>
+              <div class="card-art" id="card-art-2"></div>
+              <div class="card-numeral" id="card-numeral-2"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tap-hint" id="tap-hint">tap any card to begin your reading</div>
+
+  <div class="reading" id="reading">
+    <div class="reading-rule"></div>
+    <div class="reading-text" id="reading-text"></div>
+  </div>
+
+  <div class="footer">
+    <a href="#">shop gifts for mystics</a>
+  </div>
+
+</div>
+<script>
+// ─── DATE DISPLAY ────────────────────────────────────────────────────────────
+var topDate = new Date();
+document.getElementById('top-date').textContent =
+  topDate.toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric'}).toUpperCase();
+
+// ─── CARD DEFINITIONS ────────────────────────────────────────────────────────
+// Each card has: id, name, numeral, suit (for label display), and an SVG art function
+var CARDS = [
+  // MAJOR ARCANA
+  {
+    id: 'fool', name: 'The Fool', numeral: '0', label: 'The Fool',
+    art: `<svg width="52" height="80" viewBox="0 0 52 80" fill="none">
+      <circle cx="26" cy="20" r="8" stroke="#8a7050" stroke-width="0.9" fill="none"/>
+      <line x1="26" y1="28" x2="26" y2="56" stroke="#8a7050" stroke-width="0.8"/>
+      <line x1="26" y1="38" x2="16" y2="48" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="26" y1="38" x2="36" y2="48" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="26" y1="56" x2="18" y2="68" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="26" y1="56" x2="34" y2="68" stroke="#8a7050" stroke-width="0.7"/>
+      <circle cx="40" cy="14" r="4" stroke="#8a7050" stroke-width="0.6" fill="none"/>
+      <line x1="36" y1="22" x2="40" y2="28" stroke="#8a7050" stroke-width="0.5" stroke-dasharray="2,2"/>
+    </svg>`
+  },
+  {
+    id: 'magician', name: 'The Magician', numeral: 'I', label: 'The Magician',
+    art: `<svg width="52" height="80" viewBox="0 0 52 80" fill="none">
+      <circle cx="26" cy="18" r="7" stroke="#8a7050" stroke-width="0.9" fill="none"/>
+      <line x1="26" y1="10" x2="26" y2="4" stroke="#8a7050" stroke-width="1"/>
+      <line x1="26" y1="25" x2="26" y2="55" stroke="#8a7050" stroke-width="0.8"/>
+      <line x1="26" y1="38" x2="14" y2="38" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="26" y1="38" x2="38" y2="38" stroke="#8a7050" stroke-width="0.7"/>
+      <circle cx="12" cy="38" r="3" stroke="#8a7050" stroke-width="0.6" fill="none"/>
+      <rect x="35" y="35" width="6" height="6" stroke="#8a7050" stroke-width="0.6" fill="none"/>
+      <line x1="26" y1="55" x2="18" y2="68" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="26" y1="55" x2="34" y2="68" stroke="#8a7050" stroke-width="0.7"/>
+      <path d="M22 4 L26 1 L30 4" stroke="#8a7050" stroke-width="0.6" fill="none"/>
+    </svg>`
+  },
+  {
+    id: 'high-priestess', name: 'The High Priestess', numeral: 'II', label: 'High\nPriestess',
+    art: `<svg width="52" height="80" viewBox="0 0 52 80" fill="none">
+      <circle cx="26" cy="16" r="7" stroke="#8a7050" stroke-width="0.9" fill="none"/>
+      <line x1="19" y1="23" x2="10" y2="72" stroke="#8a7050" stroke-width="0.8"/>
+      <line x1="33" y1="23" x2="42" y2="72" stroke="#8a7050" stroke-width="0.8"/>
+      <line x1="10" y1="72" x2="42" y2="72" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="26" y1="23" x2="26" y2="58" stroke="#8a7050" stroke-width="0.7" stroke-dasharray="3,2"/>
+      <circle cx="26" cy="60" r="5" stroke="#8a7050" stroke-width="0.6" fill="none"/>
+      <line x1="22" y1="60" x2="30" y2="60" stroke="#8a7050" stroke-width="0.5"/>
+    </svg>`
+  },
+  {
+    id: 'empress', name: 'The Empress', numeral: 'III', label: 'The Empress',
+    art: `<svg width="52" height="80" viewBox="0 0 52 80" fill="none">
+      <circle cx="26" cy="14" r="7" stroke="#8a7050" stroke-width="0.9" fill="none"/>
+      <path d="M18 24 Q10 40 14 58 Q20 70 26 72 Q32 70 38 58 Q42 40 34 24 Z" stroke="#8a7050" stroke-width="0.8" fill="none"/>
+      <path d="M18 36 Q26 30 34 36" stroke="#8a7050" stroke-width="0.6" fill="none"/>
+      <circle cx="26" cy="48" r="4" stroke="#8a7050" stroke-width="0.5" fill="none"/>
+      <path d="M20 8 Q26 4 32 8" stroke="#8a7050" stroke-width="0.7" fill="none"/>
+    </svg>`
+  },
+  {
+    id: 'emperor', name: 'The Emperor', numeral: 'IV', label: 'The Emperor',
+    art: `<svg width="52" height="80" viewBox="0 0 52 80" fill="none">
+      <circle cx="26" cy="14" r="7" stroke="#8a7050" stroke-width="0.9" fill="none"/>
+      <path d="M16 24 L16 64 L36 64 L36 24 Z" stroke="#8a7050" stroke-width="0.8" fill="none"/>
+      <line x1="16" y1="40" x2="36" y2="40" stroke="#8a7050" stroke-width="0.6"/>
+      <path d="M20 8 L26 2 L32 8" stroke="#8a7050" stroke-width="0.8" fill="none"/>
+      <line x1="16" y1="64" x2="10" y2="72" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="36" y1="64" x2="42" y2="72" stroke="#8a7050" stroke-width="0.7"/>
+    </svg>`
+  },
+  {
+    id: 'hierophant', name: 'The Hierophant', numeral: 'V', label: 'The Hierophant',
+    art: `<svg width="52" height="80" viewBox="0 0 52 80" fill="none">
+      <circle cx="26" cy="12" r="6" stroke="#8a7050" stroke-width="0.9" fill="none"/>
+      <line x1="22" y1="6" x2="22" y2="2" stroke="#8a7050" stroke-width="0.8"/>
+      <line x1="30" y1="6" x2="30" y2="2" stroke="#8a7050" stroke-width="0.8"/>
+      <line x1="20" y1="18" x2="14" y2="72" stroke="#8a7050" stroke-width="0.8"/>
+      <line x1="32" y1="18" x2="38" y2="72" stroke="#8a7050" stroke-width="0.8"/>
+      <line x1="14" y1="72" x2="38" y2="72" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="18" y1="34" x2="34" y2="34" stroke="#8a7050" stroke-width="0.6"/>
+      <line x1="18" y1="46" x2="34" y2="46" stroke="#8a7050" stroke-width="0.6"/>
+      <circle cx="26" cy="56" r="5" stroke="#8a7050" stroke-width="0.5" fill="none"/>
+    </svg>`
+  },
+  {
+    id: 'lovers', name: 'The Lovers', numeral: 'VI', label: 'The Lovers',
+    art: `<svg width="52" height="80" viewBox="0 0 52 80" fill="none">
+      <circle cx="16" cy="20" r="6" stroke="#8a7050" stroke-width="0.9" fill="none"/>
+      <circle cx="36" cy="20" r="6" stroke="#8a7050" stroke-width="0.9" fill="none"/>
+      <line x1="16" y1="26" x2="16" y2="60" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="36" y1="26" x2="36" y2="60" stroke="#8a7050" stroke-width="0.7"/>
+      <path d="M16 42 Q26 36 36 42" stroke="#8a7050" stroke-width="0.6" fill="none"/>
+      <path d="M22 8 Q26 4 30 8 Q28 12 26 10 Q24 12 22 8 Z" stroke="#8a7050" stroke-width="0.6" fill="none"/>
+    </svg>`
+  },
+  {
+    id: 'chariot', name: 'The Chariot', numeral: 'VII', label: 'The Chariot',
+    art: `<svg width="52" height="80" viewBox="0 0 52 80" fill="none">
+      <rect x="12" y="28" width="28" height="32" rx="2" stroke="#8a7050" stroke-width="0.9" fill="none"/>
+      <circle cx="16" cy="16" r="5" stroke="#8a7050" stroke-width="0.8" fill="none"/>
+      <circle cx="36" cy="16" r="5" stroke="#8a7050" stroke-width="0.8" fill="none"/>
+      <line x1="12" y1="60" x2="6" y2="72" stroke="#8a7050" stroke-width="0.8"/>
+      <line x1="40" y1="60" x2="46" y2="72" stroke="#8a7050" stroke-width="0.8"/>
+      <line x1="6" y1="72" x2="46" y2="72" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="16" y1="21" x2="16" y2="28" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="36" y1="21" x2="36" y2="28" stroke="#8a7050" stroke-width="0.7"/>
+    </svg>`
+  },
+  {
+    id: 'strength', name: 'Strength', numeral: 'VIII', label: 'Strength',
+    art: `<svg width="52" height="80" viewBox="0 0 52 80" fill="none">
+      <circle cx="26" cy="14" r="6" stroke="#8a7050" stroke-width="0.9" fill="none"/>
+      <path d="M26 20 Q36 28 38 44 Q36 58 26 60 Q16 58 14 44 Q16 28 26 20 Z" stroke="#8a7050" stroke-width="0.8" fill="none"/>
+      <path d="M20 38 Q26 34 32 38" stroke="#8a7050" stroke-width="0.7" fill="none"/>
+      <line x1="20" y1="48" x2="32" y2="48" stroke="#8a7050" stroke-width="0.6"/>
+      <path d="M20 8 Q26 4 32 8" stroke="#8a7050" stroke-width="0.6" stroke-dasharray="2,2" fill="none"/>
+    </svg>`
+  },
+  {
+    id: 'hermit', name: 'The Hermit', numeral: 'IX', label: 'The Hermit',
+    art: `<svg width="52" height="80" viewBox="0 0 52 80" fill="none">
+      <circle cx="26" cy="14" r="6" stroke="#8a7050" stroke-width="0.9" fill="none"/>
+      <line x1="26" y1="20" x2="20" y2="72" stroke="#8a7050" stroke-width="0.8"/>
+      <line x1="20" y1="72" x2="16" y2="72" stroke="#8a7050" stroke-width="0.7"/>
+      <path d="M32 28 L38 32" stroke="#8a7050" stroke-width="0.7"/>
+      <polygon cx="38" cy="28" points="34,24 42,24 42,34 34,34" stroke="#8a7050" stroke-width="0.5" fill="none"/>
+      <circle cx="38" cy="29" r="4" stroke="#8a7050" stroke-width="0.5" fill="none"/>
+    </svg>`
+  },
+  {
+    id: 'wheel', name: 'Wheel of Fortune', numeral: 'X', label: 'Wheel of\nFortune',
+    art: `<svg width="52" height="80" viewBox="0 0 52 80" fill="none">
+      <circle cx="26" cy="40" r="22" stroke="#8a7050" stroke-width="0.9" fill="none"/>
+      <circle cx="26" cy="40" r="14" stroke="#8a7050" stroke-width="0.6" fill="none"/>
+      <circle cx="26" cy="40" r="4" fill="#8a7050"/>
+      <line x1="26" y1="18" x2="26" y2="26" stroke="#8a7050" stroke-width="0.6"/>
+      <line x1="26" y1="54" x2="26" y2="62" stroke="#8a7050" stroke-width="0.6"/>
+      <line x1="4" y1="40" x2="12" y2="40" stroke="#8a7050" stroke-width="0.6"/>
+      <line x1="40" y1="40" x2="48" y2="40" stroke="#8a7050" stroke-width="0.6"/>
+      <line x1="10" y1="24" x2="16" y2="30" stroke="#8a7050" stroke-width="0.6"/>
+      <line x1="36" y1="50" x2="42" y2="56" stroke="#8a7050" stroke-width="0.6"/>
+      <line x1="42" y1="24" x2="36" y2="30" stroke="#8a7050" stroke-width="0.6"/>
+      <line x1="16" y1="50" x2="10" y2="56" stroke="#8a7050" stroke-width="0.6"/>
+    </svg>`
+  },
+  {
+    id: 'justice', name: 'Justice', numeral: 'XI', label: 'Justice',
+    art: `<svg width="52" height="80" viewBox="0 0 52 80" fill="none">
+      <circle cx="26" cy="14" r="6" stroke="#8a7050" stroke-width="0.9" fill="none"/>
+      <line x1="26" y1="20" x2="26" y2="72" stroke="#8a7050" stroke-width="0.8"/>
+      <line x1="12" y1="36" x2="40" y2="36" stroke="#8a7050" stroke-width="0.7"/>
+      <circle cx="12" cy="44" r="6" stroke="#8a7050" stroke-width="0.6" fill="none"/>
+      <circle cx="40" cy="30" r="6" stroke="#8a7050" stroke-width="0.6" fill="none"/>
+      <line x1="12" y1="36" x2="12" y2="44" stroke="#8a7050" stroke-width="0.5" stroke-dasharray="2,2"/>
+      <line x1="40" y1="36" x2="40" y2="30" stroke="#8a7050" stroke-width="0.5" stroke-dasharray="2,2"/>
+      <path d="M22 8 L26 2 L30 8" stroke="#8a7050" stroke-width="0.6" fill="none"/>
+    </svg>`
+  },
+  {
+    id: 'hanged-man', name: 'The Hanged Man', numeral: 'XII', label: 'The\nHanged Man',
+    art: `<svg width="52" height="80" viewBox="0 0 52 80" fill="none">
+      <line x1="14" y1="8" x2="38" y2="8" stroke="#8a7050" stroke-width="0.9"/>
+      <line x1="14" y1="8" x2="14" y2="56" stroke="#8a7050" stroke-width="0.8"/>
+      <line x1="38" y1="8" x2="38" y2="56" stroke="#8a7050" stroke-width="0.8"/>
+      <line x1="26" y1="8" x2="26" y2="22" stroke="#8a7050" stroke-width="0.7"/>
+      <circle cx="26" cy="28" r="6" stroke="#8a7050" stroke-width="0.9" fill="none"/>
+      <line x1="26" y1="34" x2="20" y2="46" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="26" y1="34" x2="32" y2="46" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="20" y1="40" x2="14" y2="38" stroke="#8a7050" stroke-width="0.6"/>
+    </svg>`
+  },
+  {
+    id: 'death', name: 'Death', numeral: 'XIII', label: 'Death',
+    art: `<svg width="52" height="80" viewBox="0 0 52 80" fill="none">
+      <path d="M26 8 L30 20 L42 20 L32 28 L36 40 L26 32 L16 40 L20 28 L10 20 L22 20 Z" stroke="#8a7050" stroke-width="0.8" fill="none"/>
+      <line x1="26" y1="40" x2="26" y2="60" stroke="#8a7050" stroke-width="0.8"/>
+      <path d="M18 60 Q18 72 26 72 Q34 72 34 60" stroke="#8a7050" stroke-width="0.7" fill="none"/>
+      <circle cx="10" cy="56" r="3" stroke="#8a7050" stroke-width="0.5" fill="none"/>
+      <circle cx="42" cy="56" r="3" stroke="#8a7050" stroke-width="0.5" fill="none"/>
+    </svg>`
+  },
+  {
+    id: 'temperance', name: 'Temperance', numeral: 'XIV', label: 'Temperance',
+    art: `<svg width="52" height="80" viewBox="0 0 52 80" fill="none">
+      <circle cx="26" cy="14" r="6" stroke="#8a7050" stroke-width="0.9" fill="none"/>
+      <line x1="26" y1="20" x2="26" y2="36" stroke="#8a7050" stroke-width="0.8"/>
+      <path d="M14 36 L14 56 Q14 64 26 64 Q38 64 38 56 L38 36 Z" stroke="#8a7050" stroke-width="0.8" fill="none"/>
+      <path d="M14 44 L38 44" stroke="#8a7050" stroke-width="0.6"/>
+      <circle cx="26" cy="50" r="5" stroke="#8a7050" stroke-width="0.5" fill="none"/>
+      <line x1="22" y1="8" x2="30" y2="8" stroke="#8a7050" stroke-width="0.6"/>
+    </svg>`
+  },
+  {
+    id: 'devil', name: 'The Devil', numeral: 'XV', label: 'The Devil',
+    art: `<svg width="52" height="80" viewBox="0 0 52 80" fill="none">
+      <path d="M18 16 L26 4 L34 16" stroke="#8a7050" stroke-width="0.8" fill="none"/>
+      <path d="M14 16 L26 10 L38 16" stroke="#8a7050" stroke-width="0.6" fill="none"/>
+      <circle cx="26" cy="24" r="8" stroke="#8a7050" stroke-width="0.9" fill="none"/>
+      <circle cx="16" cy="52" r="5" stroke="#8a7050" stroke-width="0.7" fill="none"/>
+      <circle cx="36" cy="52" r="5" stroke="#8a7050" stroke-width="0.7" fill="none"/>
+      <line x1="26" y1="32" x2="26" y2="42" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="26" y1="42" x2="16" y2="47" stroke="#8a7050" stroke-width="0.6"/>
+      <line x1="26" y1="42" x2="36" y2="47" stroke="#8a7050" stroke-width="0.6"/>
+      <line x1="16" y1="57" x2="16" y2="68" stroke="#8a7050" stroke-width="0.6" stroke-dasharray="2,2"/>
+      <line x1="36" y1="57" x2="36" y2="68" stroke="#8a7050" stroke-width="0.6" stroke-dasharray="2,2"/>
+    </svg>`
+  },
+  {
+    id: 'tower', name: 'The Tower', numeral: 'XVI', label: 'The Tower',
+    art: `<svg width="52" height="80" viewBox="0 0 52 80" fill="none">
+      <rect x="18" y="20" width="16" height="44" stroke="#8a7050" stroke-width="0.9" fill="none"/>
+      <path d="M18 20 L26 8 L34 20" stroke="#8a7050" stroke-width="0.8" fill="none"/>
+      <circle cx="26" cy="16" r="3" stroke="#8a7050" stroke-width="0.6" fill="none"/>
+      <line x1="10" y1="14" x2="18" y2="22" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="42" y1="14" x2="34" y2="22" stroke="#8a7050" stroke-width="0.7"/>
+      <circle cx="8" cy="12" r="2" stroke="#8a7050" stroke-width="0.5" fill="none"/>
+      <circle cx="44" cy="12" r="2" stroke="#8a7050" stroke-width="0.5" fill="none"/>
+      <line x1="18" y1="44" x2="34" y2="44" stroke="#8a7050" stroke-width="0.5"/>
+    </svg>`
+  },
+  {
+    id: 'star', name: 'The Star', numeral: 'XVII', label: 'The Star',
+    art: `<svg width="52" height="80" viewBox="0 0 52 80" fill="none">
+      <path d="M26 6 L28 12 L34 12 L29 16 L31 22 L26 18 L21 22 L23 16 L18 12 L24 12 Z" stroke="#8a7050" stroke-width="0.7" fill="none"/>
+      <circle cx="14" cy="22" r="2" stroke="#8a7050" stroke-width="0.5" fill="none"/>
+      <circle cx="38" cy="22" r="2" stroke="#8a7050" stroke-width="0.5" fill="none"/>
+      <circle cx="8" cy="38" r="2" stroke="#8a7050" stroke-width="0.5" fill="none"/>
+      <path d="M16 36 Q16 52 26 60 Q36 52 36 36" stroke="#8a7050" stroke-width="0.8" fill="none"/>
+      <line x1="16" y1="44" x2="36" y2="44" stroke="#8a7050" stroke-width="0.5"/>
+      <line x1="26" y1="60" x2="26" y2="72" stroke="#8a7050" stroke-width="0.6"/>
+    </svg>`
+  },
+  {
+    id: 'moon', name: 'The Moon', numeral: 'XVIII', label: 'The Moon',
+    art: `<svg width="52" height="80" viewBox="0 0 52 80" fill="none">
+      <path d="M26 8 Q38 14 38 26 Q38 36 26 40 Q32 34 32 26 Q32 16 26 8 Z" stroke="#8a7050" stroke-width="0.9" fill="none"/>
+      <circle cx="26" cy="8" r="1.5" fill="#8a7050"/>
+      <line x1="26" y1="44" x2="26" y2="50" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="18" y1="46" x2="14" y2="50" stroke="#8a7050" stroke-width="0.6"/>
+      <line x1="34" y1="46" x2="38" y2="50" stroke="#8a7050" stroke-width="0.6"/>
+      <path d="M10 56 Q10 68 18 72 L18 56 Z" stroke="#8a7050" stroke-width="0.8" fill="none"/>
+      <path d="M42 56 Q42 68 34 72 L34 56 Z" stroke="#8a7050" stroke-width="0.8" fill="none"/>
+      <line x1="18" y1="56" x2="34" y2="56" stroke="#8a7050" stroke-width="0.7"/>
+      <circle cx="16" cy="52" r="3" stroke="#8a7050" stroke-width="0.6" fill="none"/>
+      <circle cx="36" cy="52" r="3" stroke="#8a7050" stroke-width="0.6" fill="none"/>
+    </svg>`
+  },
+  {
+    id: 'sun', name: 'The Sun', numeral: 'XIX', label: 'The Sun',
+    art: `<svg width="52" height="80" viewBox="0 0 52 80" fill="none">
+      <circle cx="26" cy="28" r="14" stroke="#8a7050" stroke-width="0.9" fill="none"/>
+      <circle cx="26" cy="28" r="6" stroke="#8a7050" stroke-width="0.6" fill="none"/>
+      <line x1="26" y1="10" x2="26" y2="6" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="26" y1="46" x2="26" y2="50" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="8" y1="28" x2="4" y2="28" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="44" y1="28" x2="48" y2="28" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="14" y1="16" x2="11" y2="13" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="38" y1="16" x2="41" y2="13" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="14" y1="40" x2="11" y2="43" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="38" y1="40" x2="41" y2="43" stroke="#8a7050" stroke-width="0.7"/>
+      <circle cx="26" cy="62" r="6" stroke="#8a7050" stroke-width="0.8" fill="none"/>
+      <line x1="26" y1="50" x2="26" y2="56" stroke="#8a7050" stroke-width="0.7"/>
+    </svg>`
+  },
+  {
+    id: 'judgement', name: 'Judgement', numeral: 'XX', label: 'Judgement',
+    art: `<svg width="52" height="80" viewBox="0 0 52 80" fill="none">
+      <path d="M18 8 Q26 4 34 8 Q38 12 34 16 Q30 20 26 18 Q22 20 18 16 Q14 12 18 8 Z" stroke="#8a7050" stroke-width="0.8" fill="none"/>
+      <line x1="26" y1="18" x2="26" y2="32" stroke="#8a7050" stroke-width="0.7"/>
+      <circle cx="16" cy="44" r="5" stroke="#8a7050" stroke-width="0.7" fill="none"/>
+      <circle cx="36" cy="44" r="5" stroke="#8a7050" stroke-width="0.7" fill="none"/>
+      <line x1="26" y1="32" x2="16" y2="39" stroke="#8a7050" stroke-width="0.6"/>
+      <line x1="26" y1="32" x2="36" y2="39" stroke="#8a7050" stroke-width="0.6"/>
+      <line x1="16" y1="49" x2="20" y2="68" stroke="#8a7050" stroke-width="0.6"/>
+      <line x1="36" y1="49" x2="32" y2="68" stroke="#8a7050" stroke-width="0.6"/>
+      <line x1="20" y1="68" x2="32" y2="68" stroke="#8a7050" stroke-width="0.6"/>
+    </svg>`
+  },
+  {
+    id: 'world', name: 'The World', numeral: 'XXI', label: 'The World',
+    art: `<svg width="52" height="80" viewBox="0 0 52 80" fill="none">
+      <ellipse cx="26" cy="40" rx="14" ry="22" stroke="#8a7050" stroke-width="0.9" fill="none"/>
+      <circle cx="26" cy="40" r="6" stroke="#8a7050" stroke-width="0.6" fill="none"/>
+      <circle cx="10" cy="16" r="3" stroke="#8a7050" stroke-width="0.5" fill="none"/>
+      <circle cx="42" cy="16" r="3" stroke="#8a7050" stroke-width="0.5" fill="none"/>
+      <circle cx="10" cy="64" r="3" stroke="#8a7050" stroke-width="0.5" fill="none"/>
+      <circle cx="42" cy="64" r="3" stroke="#8a7050" stroke-width="0.5" fill="none"/>
+      <path d="M22 8 Q26 4 30 8" stroke="#8a7050" stroke-width="0.5" fill="none"/>
+    </svg>`
+  },
+  // MINOR ARCANA – selected representative cards
+  {
+    id: 'ace-cups', name: 'Ace of Cups', numeral: 'Ace', label: 'Ace of\nCups',
+    art: `<svg width="52" height="80" viewBox="0 0 52 80" fill="none">
+      <path d="M14 44 Q14 62 26 64 Q38 62 38 44 L38 36 L14 36 Z" stroke="#8a7050" stroke-width="0.9" fill="none"/>
+      <line x1="14" y1="36" x2="10" y2="28" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="38" y1="36" x2="42" y2="28" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="10" y1="28" x2="42" y2="28" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="26" y1="28" x2="26" y2="14" stroke="#8a7050" stroke-width="0.7"/>
+      <path d="M20 20 Q26 8 32 20" stroke="#8a7050" stroke-width="0.8" fill="none"/>
+      <circle cx="26" cy="50" r="4" stroke="#8a7050" stroke-width="0.6" fill="none"/>
+    </svg>`
+  },
+  {
+    id: 'five-pents', name: 'Five of Pentacles', numeral: 'V', label: 'Five of\nPentacles',
+    art: `<svg width="52" height="80" viewBox="0 0 52 80" fill="none">
+      <circle cx="16" cy="18" r="6" stroke="#8a7050" stroke-width="0.8" fill="none"/>
+      <line x1="13" y1="18" x2="19" y2="18" stroke="#8a7050" stroke-width="0.5"/>
+      <line x1="16" y1="15" x2="16" y2="21" stroke="#8a7050" stroke-width="0.5"/>
+      <circle cx="36" cy="18" r="6" stroke="#8a7050" stroke-width="0.8" fill="none"/>
+      <line x1="33" y1="18" x2="39" y2="18" stroke="#8a7050" stroke-width="0.5"/>
+      <line x1="36" y1="15" x2="36" y2="21" stroke="#8a7050" stroke-width="0.5"/>
+      <circle cx="16" cy="40" r="6" stroke="#8a7050" stroke-width="0.8" fill="none"/>
+      <line x1="13" y1="40" x2="19" y2="40" stroke="#8a7050" stroke-width="0.5"/>
+      <line x1="16" y1="37" x2="16" y2="43" stroke="#8a7050" stroke-width="0.5"/>
+      <circle cx="36" cy="40" r="6" stroke="#8a7050" stroke-width="0.8" fill="none"/>
+      <line x1="33" y1="40" x2="39" y2="40" stroke="#8a7050" stroke-width="0.5"/>
+      <line x1="36" y1="37" x2="36" y2="43" stroke="#8a7050" stroke-width="0.5"/>
+      <circle cx="26" cy="62" r="6" stroke="#8a7050" stroke-width="0.8" fill="none"/>
+      <line x1="23" y1="62" x2="29" y2="62" stroke="#8a7050" stroke-width="0.5"/>
+      <line x1="26" y1="59" x2="26" y2="65" stroke="#8a7050" stroke-width="0.5"/>
+    </svg>`
+  },
+  {
+    id: 'ten-wands', name: 'Ten of Wands', numeral: 'X', label: 'Ten of\nWands',
+    art: `<svg width="52" height="80" viewBox="0 0 52 80" fill="none">
+      <line x1="14" y1="8" x2="14" y2="72" stroke="#8a7050" stroke-width="0.8"/>
+      <line x1="18" y1="8" x2="18" y2="72" stroke="#8a7050" stroke-width="0.8"/>
+      <line x1="22" y1="8" x2="22" y2="72" stroke="#8a7050" stroke-width="0.8"/>
+      <line x1="26" y1="8" x2="26" y2="72" stroke="#8a7050" stroke-width="0.8"/>
+      <line x1="30" y1="8" x2="30" y2="72" stroke="#8a7050" stroke-width="0.8"/>
+      <line x1="34" y1="8" x2="34" y2="72" stroke="#8a7050" stroke-width="0.8"/>
+      <line x1="38" y1="8" x2="38" y2="72" stroke="#8a7050" stroke-width="0.8"/>
+      <line x1="10" y1="32" x2="42" y2="32" stroke="#8a7050" stroke-width="0.5" stroke-dasharray="3,2"/>
+    </svg>`
+  },
+  {
+    id: 'three-swords', name: 'Three of Swords', numeral: 'III', label: 'Three of\nSwords',
+    art: `<svg width="52" height="80" viewBox="0 0 52 80" fill="none">
+      <path d="M26 8 L26 64" stroke="#8a7050" stroke-width="1"/>
+      <line x1="22" y1="60" x2="30" y2="60" stroke="#8a7050" stroke-width="0.7"/>
+      <path d="M14 20 L38 56" stroke="#8a7050" stroke-width="0.9"/>
+      <line x1="34" y1="52" x2="38" y2="60" stroke="#8a7050" stroke-width="0.6"/>
+      <path d="M38 20 L14 56" stroke="#8a7050" stroke-width="0.9"/>
+      <line x1="18" y1="52" x2="14" y2="60" stroke="#8a7050" stroke-width="0.6"/>
+      <path d="M20 34 Q26 26 32 34" stroke="#8a7050" stroke-width="0.6" fill="none"/>
+    </svg>`
+  },
+  {
+    id: 'page-wands', name: 'Page of Wands', numeral: 'Page', label: 'Page of\nWands',
+    art: `<svg width="52" height="80" viewBox="0 0 52 80" fill="none">
+      <circle cx="26" cy="14" r="6" stroke="#8a7050" stroke-width="0.9" fill="none"/>
+      <line x1="26" y1="20" x2="26" y2="56" stroke="#8a7050" stroke-width="0.8"/>
+      <line x1="26" y1="38" x2="14" y2="46" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="26" y1="38" x2="38" y2="46" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="26" y1="56" x2="18" y2="68" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="26" y1="56" x2="34" y2="68" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="38" y1="28" x2="38" y2="8" stroke="#8a7050" stroke-width="1.2"/>
+      <path d="M36 10 L38 6 L40 10" stroke="#8a7050" stroke-width="0.7" fill="none"/>
+    </svg>`
+  },
+  {
+    id: 'queen-cups', name: 'Queen of Cups', numeral: 'Queen', label: 'Queen of\nCups',
+    art: `<svg width="52" height="80" viewBox="0 0 52 80" fill="none">
+      <circle cx="26" cy="12" r="6" stroke="#8a7050" stroke-width="0.9" fill="none"/>
+      <path d="M18 24 Q18 40 26 44 Q34 40 34 24 Z" stroke="#8a7050" stroke-width="0.8" fill="none"/>
+      <line x1="26" y1="44" x2="26" y2="56" stroke="#8a7050" stroke-width="0.7"/>
+      <path d="M14 56 Q14 68 26 72 Q38 68 38 56 L34 52 L18 52 Z" stroke="#8a7050" stroke-width="0.7" fill="none"/>
+      <path d="M20 8 Q26 4 32 8" stroke="#8a7050" stroke-width="0.6" fill="none"/>
+      <line x1="20" y1="32" x2="32" y2="32" stroke="#8a7050" stroke-width="0.5"/>
+    </svg>`
+  },
+  {
+    id: 'knight-swords', name: 'Knight of Swords', numeral: 'Knight', label: 'Knight of\nSwords',
+    art: `<svg width="52" height="80" viewBox="0 0 52 80" fill="none">
+      <circle cx="22" cy="16" r="6" stroke="#8a7050" stroke-width="0.9" fill="none"/>
+      <path d="M22 22 Q18 32 24 44 Q28 52 24 64" stroke="#8a7050" stroke-width="0.8" fill="none"/>
+      <line x1="16" y1="38" x2="36" y2="28" stroke="#8a7050" stroke-width="0.7"/>
+      <path d="M32 24 L40 8" stroke="#8a7050" stroke-width="1.1"/>
+      <line x1="28" y1="24" x2="36" y2="26" stroke="#8a7050" stroke-width="0.6"/>
+      <path d="M18 64 Q22 72 28 68 Q34 64 28 58" stroke="#8a7050" stroke-width="0.7" fill="none"/>
+    </svg>`
+  },
+
+  {
+    id: 'king-pents', name: 'King of Pentacles', numeral: 'King', label: 'King of\nPentacles',
+    art: `<svg width="52" height="80" viewBox="0 0 52 80" fill="none">
+      <circle cx="26" cy="12" r="6" stroke="#8a7050" stroke-width="0.9" fill="none"/>
+      <path d="M22 8 L26 4 L30 8" stroke="#8a7050" stroke-width="0.7" fill="none"/>
+      <path d="M16 22 L14 56 L38 56 L36 22 Z" stroke="#8a7050" stroke-width="0.8" fill="none"/>
+      <circle cx="26" cy="38" r="8" stroke="#8a7050" stroke-width="0.7" fill="none"/>
+      <line x1="23" y1="38" x2="29" y2="38" stroke="#8a7050" stroke-width="0.5"/>
+      <line x1="26" y1="35" x2="26" y2="41" stroke="#8a7050" stroke-width="0.5"/>
+      <line x1="14" y1="56" x2="10" y2="68" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="38" y1="56" x2="42" y2="68" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="10" y1="68" x2="42" y2="68" stroke="#8a7050" stroke-width="0.7"/>
+    </svg>`
+  },
+  {
+    id: 'two-wands', name: 'Two of Wands', numeral: 'II', label: 'Two of\nWands',
+    art: `<svg width="52" height="80" viewBox="0 0 52 80" fill="none">
+      <line x1="18" y1="8" x2="18" y2="72" stroke="#8a7050" stroke-width="1.2"/>
+      <line x1="34" y1="8" x2="34" y2="72" stroke="#8a7050" stroke-width="1.2"/>
+      <circle cx="26" cy="40" r="10" stroke="#8a7050" stroke-width="0.8" fill="none"/>
+      <line x1="18" y1="40" x2="36" y2="40" stroke="#8a7050" stroke-width="0.5"/>
+      <line x1="26" y1="30" x2="26" y2="50" stroke="#8a7050" stroke-width="0.5"/>
+    </svg>`
+  },
+  {
+    id: 'six-cups', name: 'Six of Cups', numeral: 'VI', label: 'Six of\nCups',
+    art: `<svg width="52" height="80" viewBox="0 0 52 80" fill="none">
+      <path d="M10 20 Q10 30 18 32 Q10 34 10 44 Q10 54 18 56 L18 20 Z" stroke="#8a7050" stroke-width="0.7" fill="none"/>
+      <path d="M42 20 Q42 30 34 32 Q42 34 42 44 Q42 54 34 56 L34 20 Z" stroke="#8a7050" stroke-width="0.7" fill="none"/>
+      <line x1="18" y1="20" x2="34" y2="20" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="18" y1="44" x2="34" y2="44" stroke="#8a7050" stroke-width="0.7"/>
+      <line x1="18" y1="56" x2="34" y2="56" stroke="#8a7050" stroke-width="0.7"/>
+      <path d="M18 8 Q26 4 34 8" stroke="#8a7050" stroke-width="0.6" fill="none"/>
+      <path d="M18 68 Q26 72 34 68" stroke="#8a7050" stroke-width="0.6" fill="none"/>
+    </svg>`
+  }
+];
+
+// ─── PRE-WRITTEN READINGS (combo index → reading text) ───────────────────────
+// Key format: "cardId0|cardId1|cardId2"
+// These are pre-authored. In production you'd have hundreds more.
+var READINGS = {
+  'moon|three-swords|ace-cups': {
+    title: 'From Fog into Feeling',
+    text: 'The Moon in the Embrace position asks you to sit with what is murky rather than forcing clarity. Something in your life is still developing — let it. The Three of Swords, in Release, asks you to stop rehearsing the pain. You know what hurt. You've named it. You don't have to carry it into every new room you enter. The Ace of Cups arrives as today's message with unusual softness: something genuine is being offered. An emotional beginning, a door opening in a direction you may have stopped watching. The overall shape of this reading is one of graduation — from fog toward feeling. Let it in.'
+  },
+  'five-pents|moon|ace-cups': {
+    title: 'From Scarcity to Receptivity',
+    text: 'The Five of Pentacles asks you to embrace what scarcity has taught you — not to romanticize hardship, but to acknowledge the resilience it drew out of you. Something real in you emerged only because things were hard. The Moon, in the Release position, asks you to let go of confusion as a permanent state. The murky, the unresolved — some of it was never yours to decode. The Ace of Cups arrives as today\'s message with unusual clarity: something is being offered. An emotional beginning, a softening. The overall shape of this reading is one of graduation. Let it in.'
+  },
+  'fool|wheel|sun': {
+    title: 'The Open Road',
+    text: 'The Fool in the Embrace position is not asking you to be naive — it\'s asking you to remember the version of yourself that didn\'t yet know what couldn\'t be done. That beginner\'s mind is a resource, not a liability. The Wheel of Fortune in Release asks you to stop gripping the cycle. Things are turning whether you hold on or not. What might become possible if you stopped bracing? The Sun arrives as today\'s message: warmth, visibility, the simple fact of things going well. You are allowed to receive that. Not every good thing is the setup for something harder.'
+  },
+  'hermit|tower|star': {
+    title: 'After the Clearing',
+    text: 'The Hermit in the Embrace position honors the season you\'ve been in — the retreat, the introspection, the quiet work of figuring out what you actually believe. That time was not wasted. The Tower in Release asks you to stop rebuilding the old structure just because it was familiar. What fell, fell for a reason. The Star arrives as today\'s message: it is the card that appears after destruction, and it means hope is not naive. It means you can begin again with your eyes open. This is the card of people who have been through something and come out believing in tomorrow anyway.'
+  },
+  'strength|hanged-man|world': {
+    title: 'The Long Way Around',
+    text: 'Strength in the Embrace position asks you to honor the discipline it took to get here — not force, but patience. The kind of strength that kept showing up even when showing up felt pointless. The Hanged Man in Release asks you to let go of the suspended state. The pause was necessary. It gave you a different angle on everything. But the pause is over. The World arrives as today\'s message, and it is the deck\'s most complete card: wholeness, integration, the sense that something is genuinely finished and something new is genuinely beginning. You\'ve earned this transition.'
+  },
+  'emperor|lovers|temperance': {
+    title: 'Between Structure and Flow',
+    text: 'The Emperor in the Embrace position asks you to acknowledge the frameworks you\'ve built — the systems, the discipline, the way you\'ve learned to organize your life around what matters. That structure is not the enemy of feeling. The Lovers in Release is asking you to stop treating every relationship as a decision to be optimized. Some things are not problems to solve. Temperance arrives as today\'s message with its quiet alchemy: the invitation to blend, to integrate, to find the middle path that holds both your values and your longings. What gets made when you stop choosing between the two?'
+  },
+  'high-priestess|devil|judgement': {
+    title: 'What You Already Know',
+    text: 'The High Priestess in the Embrace position asks you to trust what you know beneath the noise — the quiet thing that has been trying to get your attention. You have been right before without being able to prove it. Trust that again. The Devil in Release is asking you to examine what you\'re attached to that is keeping you small. Not all chains are visible. Some look like comfort. Some look like safety. Judgement arrives as today\'s message: the great awakening card, the call to rise. Something is asking you to step into a larger version of yourself — not because you\'re ready, but because it\'s time.'
+  },
+  'chariot|death|star': {
+    title: 'Moving Through',
+    text: 'The Chariot in the Embrace position asks you to honor the willpower it took to get in motion — the decisive moment when you stopped waiting and started moving. That momentum is yours. Death in Release is asking you to stop trying to keep something alive past its natural end. Completion is not failure. The Star arrives as today\'s message as a quiet, persistent beacon: it doesn\'t promise everything will be easy, only that hope is warranted. After every ending, it appears. You are in the after. Let yourself rest in what\'s possible.'
+  },
+  'magician|hierophant|six-cups': {
+    title: 'From Mastery to Meaning',
+    text: 'The Magician in the Embrace position asks you to own what you\'ve learned — the skills, the tools, the capability you\'ve spent years developing. You are more resourced than you sometimes remember. The Hierophant in Release is asking you to stop seeking permission from tradition. You have learned the rules well enough to know which ones apply to you and which ones don\'t. Six of Cups arrives as today\'s message with a gentle warmth: a return, a reunion, a memory of who you were before you were trying so hard. Something uncomplicated is available to you right now. Let yourself receive it.'
+  },
+  'justice|empress|ten-wands': {
+    title: 'The Weight You Carry',
+    text: 'Justice in the Embrace position asks you to acknowledge where things have actually been fair, even when they felt impossible — where your actions have aligned with your values, where you have chosen integrity when the easier path was available. The Empress in Release asks you to stop trying to nurture everything at once. You cannot grow what you are depleting yourself to sustain. Ten of Wands arrives as today\'s message: not as a burden, but as a recognition. You are carrying a great deal. That is real. The invitation is to put some of it down intentionally before it drops.'
+  },
+  'wheel|judgement|fool': {
+    title: 'Beginning Again, On Purpose',
+    text: 'The Wheel of Fortune in the Embrace position asks you to notice where things have shifted without your effort — the tide turning, the luck breaking, the cycle completing itself. You didn\'t cause all of this. Some of it arrived on its own. Judgement in Release asks you to stop waiting to feel ready. The call has already come. You\'ve been deliberating long enough. The Fool arrives as today\'s message as pure possibility: the step off the edge, the refusal to let past experience make you too careful. You know more than you did last time. That\'s enough. Begin.'
+  },
+  'sun|temperance|two-wands': {
+    title: 'Choosing the Horizon',
+    text: 'The Sun in the Embrace position asks you to sit in what is genuinely going well right now. Not to jinx it. Not to prepare for when it ends. But to actually absorb the warmth that is available to you today. Temperance in Release asks you to stop moderating your own joy. You have spent enough time managing how much goodness you let in. Two of Wands arrives as today\'s message as a card of vision: you are standing at the edge of something you haven\'t built yet. The world is wide. The next horizon is real. The question is not whether you can — it\'s which direction you\'re choosing.'
+  }
+};
+
+// ─── FALLBACK READING GENERATOR ──────────────────────────────────────────────
+// When a combo doesn't have a pre-written reading, build one from card meanings
+var CARD_MEANINGS = {
+  'fool': { embrace: 'embrace the beginner\'s mind and the courage to begin without a map', release: 'release the fear of looking foolish — it is keeping you from starting', message: 'a new beginning is available right now; the only requirement is willingness' },
+  'magician': { embrace: 'embrace the full range of tools and skills you already possess', release: 'release the belief that you need more before you can begin', message: 'everything you need is already in your hands' },
+  'high-priestess': { embrace: 'embrace the knowing that lives beneath words and proof', release: 'release the need to explain or justify your intuition', message: 'go inward; the answer you\'re seeking is quieter than the noise around it' },
+  'empress': { embrace: 'embrace abundance, growth, and the generative force within you', release: 'release the scarcity that has been making you hoard your gifts', message: 'something is growing — tend it, and step back' },
+  'emperor': { embrace: 'embrace the structures and discipline you\'ve built', release: 'release the rigidity that has stopped serving you', message: 'lead with clarity and intention today' },
+  'hierophant': { embrace: 'embrace the wisdom that has been handed down to you', release: 'release the rules that were never yours to follow', message: 'tradition has something to offer — but so does your own authority' },
+  'lovers': { embrace: 'embrace the choice that aligns with your deepest values', release: 'release the version of the relationship that exists only in your head', message: 'genuine connection is available — but it requires showing up as you actually are' },
+  'chariot': { embrace: 'embrace the momentum you have worked hard to build', release: 'release the need to control every direction of travel', message: 'you are capable of moving forward — trust the momentum' },
+  'strength': { embrace: 'embrace the patient, quiet power you carry', release: 'release the belief that force is the only kind of strength', message: 'the situation calls for gentleness over pressure' },
+  'hermit': { embrace: 'embrace the wisdom earned in solitude', release: 'release the isolation that has become a habit rather than a choice', message: 'the lantern you carry is for others too — it\'s time to share what you know' },
+  'wheel': { embrace: 'embrace the turning — good cycles come around again', release: 'release the grip on what is already changing', message: 'fortune is in motion; position yourself to receive what is coming' },
+  'justice': { embrace: 'embrace the clarity of what is actually true in this situation', release: 'release the story that has let you avoid responsibility', message: 'integrity in a small action today has large downstream effects' },
+  'hanged-man': { embrace: 'embrace the unexpected perspective that comes from surrender', release: 'release the assumption that waiting is the same as losing', message: 'a different angle changes everything — what would you see if you let go?' },
+  'death': { embrace: 'embrace the end of what has completed itself', release: 'release what is already over — let it finish', message: 'transformation is not loss; it is passage' },
+  'temperance': { embrace: 'embrace the alchemy of blending what seems incompatible', release: 'release the extremes that have been exhausting you', message: 'the middle path is not compromise — it is its own kind of power' },
+  'devil': { embrace: 'embrace your shadow — it contains real energy you\'ve been suppressing', release: 'release the attachment that has been keeping you comfortable and small', message: 'you already know what is keeping you bound; the question is whether you\'re ready to look at it' },
+  'tower': { embrace: 'embrace what the disruption revealed that was hidden before', release: 'release the need to rebuild the old structure from the same blueprint', message: 'the clearing is not the end — it is the beginning of something true' },
+  'star': { embrace: 'embrace hope as a practice, not just a feeling', release: 'release the cynicism that has been protecting you from disappointment', message: 'something worth believing in is available right now' },
+  'moon': { embrace: 'embrace the wisdom of what is not yet clear', release: 'release the confusion that has become a permanent residence', message: 'not everything needs to be decoded before morning' },
+  'sun': { embrace: 'embrace what is genuinely good right now without bracing for its end', release: 'release the habit of moderating your own joy', message: 'warmth and visibility are available — you are allowed to receive them' },
+  'judgement': { embrace: 'embrace the call you have already heard and been slow to answer', release: 'release the waiting for readiness that will never fully arrive', message: 'rise into the larger version of yourself — it is time' },
+  'world': { embrace: 'embrace the completion of what you have worked so long to finish', release: 'release the reluctance to call something truly done', message: 'integration, wholeness, arrival — this is that moment' },
+  'ace-cups': { embrace: 'embrace the emotional beginning that is being offered', release: 'release the armor that is keeping something genuine at a distance', message: 'an opening in the heart — let it happen' },
+  'five-pents': { embrace: 'embrace what hardship has built in you — the real resilience beneath it', release: 'release the scarcity story as a permanent identity', message: 'you are closer to shelter than you currently believe' },
+  'ten-wands': { embrace: 'embrace the fact of how much you are carrying — it is real', release: 'release the belief that putting something down is failure', message: 'you can set some of this down intentionally before it drops' },
+  'three-swords': { embrace: 'embrace the grief as evidence of what mattered', release: 'release the rehearsal of pain — you\'ve done enough of it', message: 'the wound is real; you do not have to carry it forever' },
+  'page-wands': { embrace: 'embrace the creative spark that is asking to move through you', release: 'release the need to know where it leads before you begin', message: 'begin the thing — the direction will clarify in motion' },
+  'queen-cups': { embrace: 'embrace the emotional intelligence you have spent years developing', release: 'release the tendency to feel everything for everyone at the cost of yourself', message: 'care for yourself with the same depth you offer others' },
+  'knight-swords': { embrace: 'embrace the clarity and decisiveness that is available to you', release: 'release the speed that has been skipping the nuance', message: 'move forward — but take one breath first' },
+  'king-pents': { embrace: 'embrace the mastery you have built in the material world', release: 'release the belief that security must be endlessly protected', message: 'you are more stable than your anxiety suggests' },
+  'two-wands': { embrace: 'embrace the vision — the horizon you can see from here', release: 'release the small version of the plan that keeps you safe', message: 'the world is wider than the room you are standing in' },
+  'six-cups': { embrace: 'embrace the warmth of what is simple and good', release: 'release the nostalgia that makes the past safer than the present', message: 'joy that is uncomplicated is available right now — receive it' }
+};
+
+function generateFallbackReading(cards) {
+  var c0 = CARD_MEANINGS[cards[0].id] || { embrace: 'what this card asks you to embrace today', release: 'what this card asks you to release', message: 'the message this card carries' };
+  var c1 = CARD_MEANINGS[cards[1].id] || { embrace: 'what this card asks you to embrace today', release: 'what this card asks you to release', message: 'the message this card carries' };
+  var c2 = CARD_MEANINGS[cards[2].id] || { embrace: 'what this card asks you to embrace today', release: 'what this card asks you to release', message: 'the message this card carries' };
+
+  return cards[0].name + ' in the Embrace position asks you to ' + c0.embrace + '. ' +
+    cards[1].name + ', in Release, asks you to ' + c1.release + '. ' +
+    cards[2].name + ' arrives as today\'s message: ' + c2.message + '.';
+}
+
+// ─── SEEDED RANDOM ────────────────────────────────────────────────────────────
+// Seed from today's date so the draw is deterministic per-device per-day
+// but random across days
+function seededRandom(seed) {
+  var x = Math.sin(seed + 1) * 10000;
+  return x - Math.floor(x);
+}
+
+function getTodaysSeed() {
+  var now = new Date();
+  // Combine date components for a unique daily seed
+  return now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
+}
+
+function drawCards(seed) {
+  var deck = CARDS.slice();
+  var drawn = [];
+  var s = seed;
+
+  for (var i = 0; i < 3; i++) {
+    s = Math.floor(seededRandom(s) * 999983); // prime to avoid patterns
+    var idx = Math.floor(seededRandom(s) * (deck.length - i));
+    drawn.push(deck[idx]);
+    deck.splice(idx, 1);
+  }
+  return drawn;
+}
+
+// ─── LOCALSTORAGE PERSISTENCE ─────────────────────────────────────────────────
+var STORAGE_KEY = 'tarot_daily_reading';
+
+function getTodayKey() {
+  var now = new Date();
+  return now.getFullYear() + '-' + (now.getMonth() + 1) + '-' + now.getDate();
+}
+
+function loadTodaysReading() {
+  try {
+    var stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return null;
+    var data = JSON.parse(stored);
+    if (data.date !== getTodayKey()) return null; // stale — new day
+    return data;
+  } catch(e) {
+    return null;
+  }
+}
+
+function saveTodaysReading(data) {
+  try {
+    data.date = getTodayKey();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch(e) {}
+}
+
+// ─── CARD RENDERING ───────────────────────────────────────────────────────────
+function renderCard(index, card) {
+  var labelLines = card.label.split('\n');
+  var labelHtml = labelLines.join('<br>');
+  document.getElementById('card-label-' + index).innerHTML = labelHtml;
+  document.getElementById('card-art-' + index).innerHTML = card.art;
+  document.getElementById('card-numeral-' + index).textContent = card.numeral;
+}
+
+// ─── MAIN LOGIC ───────────────────────────────────────────────────────────────
+var revealed = false;
+var drawnCards = [];
+var readingData = null;
+
+function getCardById(cardId) {
+  for (var i = 0; i < CARDS.length; i++) {
+    if (CARDS[i].id === cardId) return CARDS[i];
+  }
+  return null;
+}
+
+// Check localStorage first
+var stored = loadTodaysReading();
+
+if (stored) {
+  // Re-hydrate the same reading
+  drawnCards = stored.cardIds.map(function(id) {
+    return getCardById(id);
+  }).filter(Boolean);
+  readingData = stored;
+}
+
+if (!readingData || drawnCards.length !== 3) {
+  // Draw fresh cards for today
+  var seed = getTodaysSeed();
+  drawnCards = drawCards(seed);
+
+  // Look up pre-written reading, or generate fallback
+  var comboKey = drawnCards.map(function(c) { return c.id; }).join('|');
+  var preWritten = READINGS[comboKey];
+
+  readingData = {
+    cardIds: drawnCards.map(function(c) { return c.id; }),
+    comboKey: comboKey,
+    title: preWritten ? preWritten.title : null,
+    text: preWritten ? preWritten.text : generateFallbackReading(drawnCards)
+  };
+
+  saveTodaysReading(readingData);
+}
+
+// Render cards
+drawnCards.forEach(function(card, i) {
+  renderCard(i, card);
+});
+
+// Populate reading text
+var readingTextEl = document.getElementById('reading-text');
+var p = document.createElement('p');
+p.textContent = readingData.text;
+readingTextEl.appendChild(p);
+
+// ─── FLIP INTERACTION ─────────────────────────────────────────────────────────
+function flipCard(id, delay) {
+  setTimeout(function() {
+    document.getElementById(id).classList.add('flipped');
+  }, delay);
+}
+
+function revealAll() {
+  if (revealed) return;
+  revealed = true;
+  document.getElementById('tap-hint').style.opacity = '0';
+  flipCard('card-0', 0);
+  flipCard('card-1', 180);
+  flipCard('card-2', 360);
+  setTimeout(function() {
+    document.getElementById('reading').classList.add('visible');
+  }, 700);
+}
+
+function wireRevealHandlers() {
+  var triggerEls = document.querySelectorAll('.card-wrap, .card-inner');
+  triggerEls.forEach(function(el) {
+    el.addEventListener('click', revealAll);
+    el.addEventListener('touchend', revealAll, { passive: true });
+  });
+}
+wireRevealHandlers();
+
+// ─── DATE DISPLAY ─────────────────────────────────────────────────────────────
+document.getElementById('top-date').textContent =
+  new Date().toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric'}).toUpperCase();
+</script>
+</body>
+</html>
