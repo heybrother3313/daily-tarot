@@ -1014,7 +1014,15 @@ function initDailyReading() {
       return getCardById(id);
     }).filter(Boolean);
     if (drawnCards.length === 3) {
-      readingData = stored;
+      var storedComboKey = drawnCards.map(function(c) { return c.id; }).join('|');
+      var latestReading = READINGS[storedComboKey];
+      readingData = {
+        cardIds: drawnCards.map(function(c) { return c.id; }),
+        comboKey: storedComboKey,
+        title: latestReading ? latestReading.title : (stored.title || null),
+        text: latestReading ? latestReading.text : generateFallbackReading(drawnCards)
+      };
+      saveTodaysReading(readingData);
     }
   }
 
