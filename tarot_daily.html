@@ -749,7 +749,7 @@ var CARDS = [
 var READINGS = {
   'moon|three-swords|ace-cups': {
     title: 'From Fog into Feeling',
-    text: 'The Moon in the Embrace position asks you to sit with what is murky rather than forcing clarity. Something in your life is still developing — let it. The Three of Swords, in Release, asks you to stop rehearsing the pain. You know what hurt. You've named it. You don't have to carry it into every new room you enter. The Ace of Cups arrives as today's message with unusual softness: something genuine is being offered. An emotional beginning, a door opening in a direction you may have stopped watching. The overall shape of this reading is one of graduation — from fog toward feeling. Let it in.'
+    text: 'The Moon in the Embrace position asks you to sit with what is murky rather than forcing clarity. Something in your life is still developing — let it. The Three of Swords, in Release, asks you to stop rehearsing the pain. You know what hurt. You\'ve named it. You don\'t have to carry it into every new room you enter. The Ace of Cups arrives as today\'s message with unusual softness: something genuine is being offered. An emotional beginning, a door opening in a direction you may have stopped watching. The overall shape of this reading is one of graduation — from fog toward feeling. Let it in.'
   },
   'five-pents|moon|ace-cups': {
     title: 'From Scarcity to Receptivity',
@@ -844,28 +844,15 @@ function generateFallbackReading(cards) {
     cards[2].name + ' arrives as today\'s message: ' + c2.message + '.';
 }
 
-// ─── SEEDED RANDOM ────────────────────────────────────────────────────────────
-// Seed from today's date so the draw is deterministic per-device per-day
-// but random across days
-function seededRandom(seed) {
-  var x = Math.sin(seed + 1) * 10000;
-  return x - Math.floor(x);
-}
-
-function getTodaysSeed() {
-  var now = new Date();
-  // Combine date components for a unique daily seed
-  return now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
-}
-
-function drawCards(seed) {
+// ─── DAILY RANDOM DRAW ────────────────────────────────────────────────────────
+// Draw 3 unique random cards for this user/session day.
+// The result is persisted in localStorage and reused until the date changes.
+function drawCards() {
   var deck = CARDS.slice();
   var drawn = [];
-  var s = seed;
 
   for (var i = 0; i < 3; i++) {
-    s = Math.floor(seededRandom(s) * 999983); // prime to avoid patterns
-    var idx = Math.floor(seededRandom(s) * (deck.length - i));
+    var idx = Math.floor(Math.random() * deck.length);
     drawn.push(deck[idx]);
     deck.splice(idx, 1);
   }
@@ -886,6 +873,9 @@ function loadTodaysReading() {
     if (!stored) return null;
     var data = JSON.parse(stored);
     if (data.date !== getTodayKey()) return null; // stale — new day
+    if (!data || !Array.isArray(data.cardIds) || data.cardIds.length !== 3 || typeof data.text !== 'string') {
+      return null;
+    }
     return data;
   } catch(e) {
     return null;
@@ -928,13 +918,14 @@ if (stored) {
   drawnCards = stored.cardIds.map(function(id) {
     return getCardById(id);
   }).filter(Boolean);
-  readingData = stored;
+  if (drawnCards.length === 3) {
+    readingData = stored;
+  }
 }
 
 if (!readingData || drawnCards.length !== 3) {
-  // Draw fresh cards for today
-  var seed = getTodaysSeed();
-  drawnCards = drawCards(seed);
+  // Draw fresh random cards for today (per user/browser)
+  drawnCards = drawCards();
 
   // Look up pre-written reading, or generate fallback
   var comboKey = drawnCards.map(function(c) { return c.id; }).join('|');
@@ -964,7 +955,10 @@ readingTextEl.appendChild(p);
 // ─── FLIP INTERACTION ─────────────────────────────────────────────────────────
 function flipCard(id, delay) {
   setTimeout(function() {
-    document.getElementById(id).classList.add('flipped');
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.style.transition = 'transform 0.65s cubic-bezier(0.4, 0, 0.2, 1)';
+    el.style.transform = 'rotateY(180deg)';
   }, delay);
 }
 
@@ -981,11 +975,20 @@ function revealAll() {
 }
 
 function wireRevealHandlers() {
-  var triggerEls = document.querySelectorAll('.card-wrap, .card-inner');
-  triggerEls.forEach(function(el) {
-    el.addEventListener('click', revealAll);
-    el.addEventListener('touchend', revealAll, { passive: true });
-  });
+  var ids = ['card-0', 'card-1', 'card-2'];
+  for (var i = 0; i < ids.length; i++) {
+    var inner = document.getElementById(ids[i]);
+    if (!inner) continue;
+    inner.addEventListener('click', revealAll);
+    inner.addEventListener('touchstart', revealAll, false);
+  }
+
+  // Also bind the wrappers so tapping card margins still reveals.
+  var wraps = document.querySelectorAll('.card-wrap');
+  for (var j = 0; j < wraps.length; j++) {
+    wraps[j].addEventListener('click', revealAll);
+    wraps[j].addEventListener('touchstart', revealAll, false);
+  }
 }
 wireRevealHandlers();
 
