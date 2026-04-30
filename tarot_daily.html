@@ -805,6 +805,8 @@ var READINGS = {
     text: 'The Sun in the Embrace position asks you to sit in what is genuinely going well right now. Not to jinx it. Not to prepare for when it ends. But to actually absorb the warmth that is available to you today. Temperance in Release asks you to stop moderating your own joy. You have spent enough time managing how much goodness you let in. Two of Wands arrives as today\'s message as a card of vision: you are standing at the edge of something you haven\'t built yet. The world is wide. The next horizon is real. The question is not whether you can — it\'s which direction you\'re choosing.'
   }
 };
+var CSV_READINGS = {};
+var HAS_CSV_READINGS = false;
 
 // ─── FALLBACK READING GENERATOR ──────────────────────────────────────────────
 // When a combo doesn't have a pre-written reading, build one from card meanings
@@ -970,9 +972,31 @@ function parseReadingsCsv(csvText) {
 
 function applyReadingsFromCsvText(csvText) {
   var result = parseReadingsCsv(csvText);
-  Object.keys(result.readings).forEach(function(key) {
-    READINGS[key] = result.readings[key];
+  CSV_READINGS = result.readings;
+  HAS_CSV_READINGS = Object.keys(CSV_READINGS).length > 0;
+}
+
+function getReadingForCombo(comboKey) {
+  if (HAS_CSV_READINGS) {
+    return CSV_READINGS[comboKey] || null;
+  }
+  return READINGS[comboKey] || null;
+}
+
+function drawCardsFromCsvCombos() {
+  var combos = Object.keys(CSV_READINGS);
+  if (!combos.length) return null;
+
+  var chosenCombo = combos[Math.floor(Math.random() * combos.length)];
+  var ids = chosenCombo.split('|');
+  if (ids.length !== 3) return null;
+
+  var cards = ids.map(function(id) {
+    return getCardById(id);
   });
+
+  if (!cards[0] || !cards[1] || !cards[2]) return null;
+  return cards;
 }
 
 function loadReadingsFromRepoCsv(done) {
@@ -1024,24 +1048,31 @@ function initDailyReading() {
     }).filter(Boolean);
     if (drawnCards.length === 3) {
       var storedComboKey = drawnCards.map(function(c) { return c.id; }).join('|');
-      var latestReading = READINGS[storedComboKey];
-      readingData = {
-        cardIds: drawnCards.map(function(c) { return c.id; }),
-        comboKey: storedComboKey,
-        title: latestReading ? latestReading.title : (stored.title || null),
-        text: latestReading ? latestReading.text : generateFallbackReading(drawnCards)
-      };
-      saveTodaysReading(readingData);
+      if (HAS_CSV_READINGS && !CSV_READINGS[storedComboKey]) {
+        // Stored combo is outside CSV set; force redraw from CSV-only pool.
+        readingData = null;
+        drawnCards = [];
+      } else {
+        var latestReading = getReadingForCombo(storedComboKey);
+        readingData = {
+          cardIds: drawnCards.map(function(c) { return c.id; }),
+          comboKey: storedComboKey,
+          title: latestReading ? latestReading.title : (stored.title || null),
+          text: latestReading ? latestReading.text : generateFallbackReading(drawnCards)
+        };
+        saveTodaysReading(readingData);
+      }
     }
   }
 
   if (!readingData || drawnCards.length !== 3) {
-    // Draw fresh random cards for today (per user/browser)
-    drawnCards = drawCards();
+    // If CSV is loaded, enforce CSV-only combos.
+    var csvCards = HAS_CSV_READINGS ? drawCardsFromCsvCombos() : null;
+    drawnCards = csvCards || drawCards();
 
     // Look up pre-written reading, or generate fallback
     var comboKey = drawnCards.map(function(c) { return c.id; }).join('|');
-    var preWritten = READINGS[comboKey];
+    var preWritten = getReadingForCombo(comboKey);
 
     readingData = {
       cardIds: drawnCards.map(function(c) { return c.id; }),
