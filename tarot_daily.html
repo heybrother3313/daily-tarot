@@ -189,6 +189,14 @@ html, body {
   background: rgba(28,46,32,0.15);
   margin-bottom: 24px;
 }
+.reading-title {
+  font-family: 'IM Fell English', Georgia, serif;
+  font-size: 30px;
+  line-height: 1.15;
+  color: #1a5c38;
+  text-align: center;
+  margin-bottom: 14px;
+}
 .reading-text p {
   font-size: 17px;
   line-height: 1.78;
@@ -312,6 +320,7 @@ html, body {
 
   <div class="reading" id="reading">
     <div class="reading-rule"></div>
+    <h2 class="reading-title" id="reading-title" style="display:none"></h2>
     <div class="reading-text" id="reading-text"></div>
   </div>
 
@@ -1050,6 +1059,15 @@ function initDailyReading() {
   });
 
   // Populate reading text
+  var readingTitleEl = document.getElementById('reading-title');
+  if (readingData.title) {
+    readingTitleEl.textContent = readingData.title;
+    readingTitleEl.style.display = 'block';
+  } else {
+    readingTitleEl.textContent = '';
+    readingTitleEl.style.display = 'none';
+  }
+
   var readingTextEl = document.getElementById('reading-text');
   var p = document.createElement('p');
   p.textContent = readingData.text;
