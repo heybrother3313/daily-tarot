@@ -161,6 +161,14 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
+}
+.card-art img {
+  max-width: 100%;
+  max-height: 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 .card-numeral {
   font-size: 10px;
@@ -1017,11 +1025,53 @@ function loadReadingsFromRepoCsv(done) {
 }
 
 // ─── CARD RENDERING ───────────────────────────────────────────────────────────
+var CARD_IMAGE_MAP = {
+  'fool': 'card-images/card_001.png',
+  'magician': 'card-images/card_002.png',
+  'high-priestess': 'card-images/card_003.png',
+  'empress': 'card-images/card_004.png',
+  'emperor': 'card-images/card_005.png',
+  'hierophant': 'card-images/card_006.png',
+  'lovers': 'card-images/card_007.png',
+  'chariot': 'card-images/card_008.png',
+  'strength': 'card-images/card_009.png',
+  'hermit': 'card-images/card_010.png',
+  'wheel': 'card-images/card_011.png',
+  'justice': 'card-images/card_012.png',
+  'hanged-man': 'card-images/card_013.png',
+  'death': 'card-images/card_014.png',
+  'temperance': 'card-images/card_015.png',
+  'devil': 'card-images/card_016.png',
+  'tower': 'card-images/card_017.png',
+  'star': 'card-images/card_018.png',
+  'moon': 'card-images/card_019.png',
+  'sun': 'card-images/card_020.png',
+  'judgement': 'card-images/card_021.png',
+  'world': 'card-images/card_022.png',
+  'ten-wands': 'card-images/card_032.png',
+  'page-wands': 'card-images/card_033.png',
+  'two-wands': 'card-images/card_024.png',
+  'ace-cups': 'card-images/card_037.png',
+  'six-cups': 'card-images/card_042.png',
+  'queen-cups': 'card-images/card_049.png',
+  'three-swords': 'card-images/card_053.png',
+  'knight-swords': 'card-images/card_062.png',
+  'five-pents': 'card-images/card_069.png',
+  'king-pents': 'card-images/card_078.png'
+};
+
 function renderCard(index, card) {
   var labelLines = card.label.split('\n');
   var labelHtml = labelLines.join('<br>');
   document.getElementById('card-label-' + index).innerHTML = labelHtml;
-  document.getElementById('card-art-' + index).innerHTML = card.art;
+  var imagePath = CARD_IMAGE_MAP[card.id];
+  if (imagePath) {
+    document.getElementById('card-art-' + index).innerHTML =
+      '<img src=\"' + imagePath + '\" alt=\"' + card.name + '\">';
+  } else {
+    // Fallback to vector art if an image isn't mapped.
+    document.getElementById('card-art-' + index).innerHTML = card.art;
+  }
   document.getElementById('card-numeral-' + index).textContent = card.numeral;
 }
 
